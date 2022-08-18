@@ -1,0 +1,14 @@
+default menu.c32
+prompt 0
+timeout 100
+ONTIMEOUT 1
+MENU TITLE ********** homelab.local PXE Menu *****************
+label 1
+menu label ^1) Install Server
+menu default
+KERNEL networkboot/vmlinuz
+APPEND initrd=networkboot/initrd.img inst.ks=http://169.254.254.50/rhel/{{ item.key }}_kickstart.cfg inst.repo=http://169.254.254.50/rhel
+
+label 2
+menu label ^2) Boot from local drive
+localboot 0

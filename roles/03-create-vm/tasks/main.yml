@@ -1,0 +1,41 @@
+---
+  - name: Remove VMs if it exists
+    vmware_guest:
+      hostname: "{{ vcenter.ip_address }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      validate_certs: no
+      cluster: "{{ cluster }}"
+      name: "{{ item.key }}"
+      state: absent
+      force: yes
+    delegate_to: localhost
+    with_dict: "{{ ansible }}"
+
+  - name: Create Services VMs
+    vmware_guest:
+      hostname: "{{ vcenter.ip_address }}"
+      username: "{{ vcenter.username }}"
+      password: "{{ vcenter.password }}"
+      validate_certs: no
+      folder: "/{{ datacenter }}/vm/"
+      datacenter: "{{ datacenter }}"
+      name: "{{ item.key }}"
+      state: poweredoff
+      guest_id: "{{ guest }}"
+      esxi_hostname: "{{ esxi_host }}"
+      disk: "{{ item.value.hdd }}"
+      hardware:
+        memory_mb: "{{ item.value.memory }}"
+        num_cpus:  "{{ item.value.cpu }}"
+        scsi: paravirtual
+        #version: 10
+      networks:
+      - name: "{{ pg }}"
+        device_type: vmxnet3
+    delegate_to: localhost
+    with_dict: "{{  ansible }}"
+    register: vm_mac
+  
+
+  

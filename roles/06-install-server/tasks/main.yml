@@ -1,0 +1,42 @@
+---
+   - name: Remove Existing SSH Key Files
+     lineinfile:
+       path: "/root/.ssh/known_hosts"
+       regexp: "^{{ item.key }}"
+       state: absent
+     with_dict: "{{ ansible }}"
+
+   - name: Set the state of a virtual machine to poweron
+     vmware_guest_powerstate:
+       hostname: "{{ vcenter.ip_address }}"
+       username: "{{ vcenter.username }}"
+       password: "{{ vcenter.password }}"
+       validate_certs: no
+       folder: "/{{ datacenter }}/vm/"
+       name: "{{ item.key }}"
+       state: powered-on
+     delegate_to: localhost
+     with_dict: "{{ ansible }}"
+   
+   - name: Wait for 1:30mins and continue play
+     wait_for:
+       timeout: 60
+     delegate_to: localhost
+
+   - name: Change VM network
+     community.vmware.vmware_guest_network:
+       validate_certs: no
+       hostname: "{{ vcenter.ip_address }}"
+       username: "{{ vcenter.username }}"
+       password: "{{ vcenter.password }}"
+       name: "{{ item.key }}"
+       label: "Network adapter 1"
+       network_name: "{{ pg_new }}"
+       state: present
+     delegate_to: localhost
+     with_dict: "{{ ansible }}"
+   
+   - name: Wait for 6 mins & continue play
+     wait_for:
+        timeout: 360
+     delegate_to: localhost

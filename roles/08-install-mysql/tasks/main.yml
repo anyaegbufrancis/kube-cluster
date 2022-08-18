@@ -1,0 +1,57 @@
+---
+- name: Installing Mysql  and dependencies
+  package:
+     name: "{{ item }}"
+     state: present
+  with_items: 
+    - mysql-server
+    - mysql 
+    - python3-PyMySQL
+    - python39
+
+- name: start and enable mysql service
+  service:
+    name: mysqld
+    state: started
+    enabled: yes
+
+- name: creating mysql user 
+  mysql_user:
+    name: "{{ database.db_user }}"
+    password: "{{ database.db_pass }}"
+    priv: '*.*:ALL'
+    host: '%'
+    state: present
+
+- name: creating database
+  mysql_db:
+    name: "{{ database.db_name }}"
+    state: present
+
+- name: Enable remote login to mysql
+  lineinfile:
+     path: /etc/my.cnf
+     line: "{{ item }}"
+  with_items:
+    - 'bind-address = *'
+    - 'require_secure_transport = ON'      
+  notify:
+     - Restart mysql
+
+- name: Allow firewall port
+  firewalld:
+    port: 3306/tcp
+    permanent: yes
+    state: enabled
+
+
+
+- name: start and enable mysql service
+  service:
+    name: mysqld
+    state: started
+    enabled: yes
+
+
+
+

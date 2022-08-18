@@ -1,0 +1,10 @@
+[servers]
+{% for dict_item in ansible %}
+{% for key, value in dict_item.items() %}
+{{ value.ip_address }}
+{% endfor %}
+{% endfor %}
+[all:vars]
+ansible_connection=ssh
+ansible_user=root
+ansible_ssh_pass={{ password }}

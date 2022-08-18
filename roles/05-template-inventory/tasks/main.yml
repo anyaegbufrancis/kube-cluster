@@ -1,0 +1,14 @@
+---  
+    - name: Initialize Inventory File
+      template:
+          src: "inventory.j2"
+          dest: "inventory"
+      with_dict: "{{ ansible }}"
+      
+    - name: Generate Other_plays file
+      template:
+          src: "{{ item.src }}"
+          dest: "{{ item.dest }}"
+      with_items:
+          - { src: other_plays.j2, dest: "other_plays.yaml" }
+     

@@ -1,0 +1,53 @@
+---       
+     - name: Update OS on {{server_name}}
+       yum: 
+        name: "*"
+        state: latest
+
+     - name: Reboot {{server_name}} and wait for it to restart
+       reboot:
+         msg: "Reboot initiated by Ansible"
+         connect_timeout: 5
+         reboot_timeout: 600
+         pre_reboot_delay: 0
+         post_reboot_delay: 30
+         test_command: whoami
+       
+     - name: Install services and dependencies on {{server_name}}
+       package:
+          name: 
+            - policycoreutils-python-utils
+            - libselinux-python3
+          state: latest
+
+     - name: Install vmware tools on {{server_name}}
+       yum:
+         name: 
+           - "open-vm-tools" # vmware tools
+         state: present
+     
+     - name: Reboot {{server_name}} and wait for it to restart
+       reboot:
+         msg: "Reboot initiated by Ansible"
+         connect_timeout: 5
+         reboot_timeout: 600
+         pre_reboot_delay: 0
+         post_reboot_delay: 30
+         test_command: whoami   
+
+     - name: Enable selinux for services on {{server_name}}
+       selinux:
+          policy: targeted
+          state: enforcing
+     
+     - name: Restart Services
+       service:
+          name: "{{ item }}"
+          state: restarted
+          enabled: yes
+       with_items:
+         - NetworkManager
+     
+     
+     
+     

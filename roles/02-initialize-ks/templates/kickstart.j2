@@ -1,0 +1,51 @@
+#Platform=x86, AMD64, or Intel EM64T
+#version=RHEL8
+# Firewall configuration
+firewall --enabled
+# Use FTP installation media
+url --url="http://{{ install_ip }}/rhel/BaseOS/"
+# Root password
+rootpw --iscrypted $1$/I2FXl0M$Qq8XUUrBzprCjvmHhKyjo1
+authselect --enableshadow --enablemd5
+# Use text install
+graphical
+firewall --enabled --ssh
+firstboot --enabled
+# accept eula
+eula --agreed
+# reboot when installation is completed
+reboot
+# System keyboard
+keyboard us
+# Network information
+network  --bootproto=static --device=ens192 --gateway={{gateway}} --ip={{item.value.ip_address}} --nameserver={{ dns_server1 }},{{ dns_server2 }} --netmask={{ subnet_mask }} --noipv6 --activate
+network  --hostname={{ item.key }}
+# System timezone
+timezone {{ timezone }} --isUtc --ntpservers={{ ntp_server1 }},{{ ntp_server2 }}
+# System language
+lang en_US
+# SELinux configuration
+selinux --enforcing
+# Installation logging level
+logging --level=info
+# System bootloader configuration
+bootloader --location=mbr
+clearpart --all --initlabel
+part swap --asprimary --fstype="swap" --size=1024
+part /boot --fstype xfs --size=300
+part pv.01 --size=1 --grow
+volgroup root_vg01 pv.01
+logvol / --fstype xfs --name=lv_01 --vgname=root_vg01 --size=1 --grow
+%packages
+@^minimal-environment
+@standard
+%end
+%addon com_redhat_kdump --disable --reserve-mb='auto'
+%end
+
+# %post --log=/root/ks-post.log
+# lineNumber=$(grep -i -n '#permitrootlogin prohibit-password' /etc/ssh/sshd_config | cut -f1 -d:)
+# sed -i "${lineNumber}s/.*/PermitRootLogin Yes/" /etc/ssh/sshd_config 
+# sed -i 's/^mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+# sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+# %end

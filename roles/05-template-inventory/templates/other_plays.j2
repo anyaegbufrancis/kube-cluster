@@ -1,0 +1,51 @@
+---
+
+  - name: Server Installation 
+    gather_facts: false
+    hosts: localhost
+    vars_files: artefacts/details.yaml
+    roles:
+       - roles/06-install-server
+
+  - name: Base Server Configuration 
+    gather_facts: false
+    hosts: servers
+    vars_files: artefacts/details.yaml
+    roles:       
+       - roles/07-configure-server
+
+## Database template Output ##
+{% for key,value in ansible[1].items() %}
+  - name: Install mySQL on DB
+    gather_facts: false
+    hosts: {{ value.ip_address }}
+    vars_files: artefacts/details.yaml
+    roles:       
+       - roles/08-install-mysql
+
+  - name: Install Install MongoDB
+    gather_facts: false
+    hosts: {{ value.ip_address}}
+    vars_files: artefacts/details.yaml
+    roles:       
+       - roles/09-install-mongodb
+{% endfor %}
+## Database Template ends
+
+## Web App template Begins ##
+{% for key,value in ansible[0].items() %}
+  - name: Install Dev Environment
+    gather_facts: false
+    hosts: {{ value.ip_address }}
+    vars_files: artefacts/details.yaml
+    roles:       
+       - roles/10-install-webapp
+{% endfor %}
+## ## Web App Template Ends ##
+  - name: Server Installation 
+    gather_facts: false
+    hosts: localhost
+    vars_files: artefacts/details.yaml
+    roles:
+       - roles/11-cleanup-install
+  

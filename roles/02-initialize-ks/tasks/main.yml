@@ -1,0 +1,29 @@
+--- 
+    - name: Remove existing kickstart files
+      file:
+        path: "artefacts/{{ item.key }}_kickstart.cfg"
+        state: absent
+      with_dict: "{{ master }}"
+
+    - name: Remove existing default files
+      file:
+        path: "artefacts/{{ item.key }}_default"
+        state: absent      
+      with_dict: "{{ master }}"  
+        
+    - name: Initialize kickstart files
+      template:
+         src: "kickstart.j2"
+         dest: "artefacts/{{ item.key }}_kickstart.cfg"
+      with_dict: "{{ master }}"
+
+    - name: Initialize default file
+      template:
+          src: "default.j2"
+          dest: "artefacts/{{ item.key }}_default"
+      with_dict: "{{ master }}"
+
+
+          
+      
+

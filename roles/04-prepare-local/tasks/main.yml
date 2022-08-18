@@ -1,0 +1,150 @@
+---  
+    - name: remove existing syslinux
+      package:
+        name: syslinux
+        state: absent
+
+    - name: Install the correct syslinux version from local directory
+      package:
+        name: syslinux
+        state: latest
+        #disable_gpg_check: yes
+
+    - name: Unmount Directory if it exists
+      mount:
+          path: "/mnt/{{ temp }}"
+          state: unmounted
+
+    - name: Remove unneeded files  & folders if they exists
+      file:
+          path: "{{ item }}"
+          state: absent
+      with_items:
+          - "/mnt/{{ temp }}"
+          - "/var/www/html/rhel"
+          - "/var/lib/tftpboot/pxelinux"
+    
+    - name: Create needed folders
+      file:
+         path: "{{ item }}"           
+         state: directory
+         mode: "0777"
+      with_items: 
+           - "/var/lib/tftpboot/pxelinux"
+           - "/var/lib/tftpboot/pxelinux/pxelinux.cfg"
+           - "/var/lib/tftpboot/pxelinux/networkboot"
+           - "/var/www/html/rhel"
+           - "/mnt/{{ temp }}"
+
+    - name: Copy kickstart files over
+      copy:
+         src: "artefacts/{{ item.key }}_kickstart.cfg"
+         dest: "/var/www/html/rhel/{{ item.key }}_kickstart.cfg"
+      with_dict: "{{ ansible }}"
+
+    - name: Mount iso file
+      mount:
+         src: "{{ rhel8_iso }}"
+         path: "/mnt/{{ temp }}"
+         fstype: iso9660
+         opts: loop
+         state: mounted
+
+    - name: Compress and copy
+      archive:
+          path: "/mnt/{{ temp }}/*"
+          dest: /var/www/html/rhel/new-file.tgz
+
+    - name: Uncompress
+      unarchive:
+        src: /var/www/html/rhel/new-file.tgz
+        dest: /var/www/html/rhel/
+
+    - name: Un-mount ISO - Installation Cleanup 1
+      mount:
+         path: "/mnt/{{ temp }}"
+         state: absent
+
+    - name: Copy kernel and install files over
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        # Copy to pxelinux directory
+         - { src: "/usr/share/syslinux/chain.c32", dest: "/var/lib/tftpboot/pxelinux"}
+         - { src: "/usr/share/syslinux/libcom32.c32", dest: "/var/lib/tftpboot/pxelinux"}
+         - { src: "/usr/share/syslinux/mboot.c32", dest: "/var/lib/tftpboot/pxelinux"}
+         - { src: "/usr/share/syslinux/menu.c32", dest: "/var/lib/tftpboot/pxelinux"}
+         - { src: "/usr/share/syslinux/pxelinux.0", dest: "/var/lib/tftpboot/pxelinux"}
+         - { src: "/usr/share/syslinux/vesamenu.c32", dest: "/var/lib/tftpboot/pxelinux"}
+         - { src: "/usr/share/syslinux/ldlinux.c32", dest: "/var/lib/tftpboot/pxelinux"}
+         - { src: "/usr/share/syslinux/libutil.c32", dest: "/var/lib/tftpboot/pxelinux"}
+         - { src: "/usr/share/syslinux/memdisk", dest: "/var/lib/tftpboot/pxelinux"}
+         # Copy to networkboot directory
+         - { src: "/var/www/html/rhel/images/pxeboot/vmlinuz", dest: "/var/lib/tftpboot/pxelinux/networkboot"}
+         - { src: "/var/www/html/rhel/images/pxeboot/initrd.img", dest: "/var/lib/tftpboot/pxelinux/networkboot"}
+
+    - name: Copy default files over
+      copy:
+         src: "artefacts/{{ item.instance.hw_name }}_default"
+         dest: "/var/lib/tftpboot/pxelinux/pxelinux.cfg/01-{{ item.instance.hw_eth0.macaddress_dash }}"
+      with_items: "{{ vm_mac.results }}"
+    
+    - name: Define boot path
+      lineinfile:
+         path: "/etc/dhcp/dhcpd.conf"
+         regexp: '^      filename "pxelinux.0";$'
+         line: '      filename "pxelinux/pxelinux.0";'
+
+    - name: Enable selinux for services
+      selinux:
+         policy: targeted
+         state: enforcing
+
+    - name: Allow rw for selinux 
+      sefcontext:
+         target: "{{ item.target }}"
+         setype: "{{ item.setype }}"
+         state: present
+      with_items:
+         - { target: "/var/www/html(/.*)?", setype: httpd_sys_rw_content_t }
+         - { target: "/var/lib/tftpboot(/.*)?", setype: tftpdir_rw_t }
+
+    - name: Apply new SELinux file context to filesystem
+      command: restorecon -irv /var/www/html
+    
+    - name: Apply new SELinux file context to filesystem
+      command: restorecon -irv /var/lib/tftpboot
+
+    - name: Allow services on firewall
+      firewalld:
+        service: "{{ item }}"
+        state: enabled
+        permanent: yes
+      with_items: 
+        - http
+        - tftp
+        - dhcp
+    
+    - name: Restart Services
+      service:
+         name: "{{ item }}"
+         state: restarted
+         enabled: yes
+      with_items:
+        - httpd
+        - tftp
+        - dhcpd
+        - xinetd
+
+    - name: Remove line from known_ssh
+      lineinfile:
+         path: /root/.ssh/known_hosts
+         regexp: "^{{ item.value.ip_address }}"
+         state: absent
+      with_dict: "{{ ansible }}"
+            
+
+      
+
+         

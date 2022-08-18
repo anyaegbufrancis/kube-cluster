@@ -1,0 +1,10 @@
+---
+  - name: Prepare kickstart & Inventory files, create VMs and prepare PXE server 
+    gather_facts: false
+    hosts: localhost
+    vars_files: artefacts/details.yaml
+    roles:
+       - roles/02-initialize-ks       
+       - roles/03-create-vm
+       - roles/04-prepare-local
+       - roles/05-template-inventory
