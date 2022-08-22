@@ -1,0 +1,8 @@
+---
+  - name: Server Installation 
+    gather_facts: false
+    hosts: localhost
+    vars_files: artefacts/details.yaml
+    roles:
+       - roles/13-cleanup-install
+  

@@ -1,0 +1,16 @@
+---
+- name: Join Worker Nodes
+  command: "{{ item }}"
+  with_items:
+    - "{{ workert }}"
+
+- name: Create Env Variable for Kubernetes
+  file:
+    path: "/root/.kube"
+    state: directory
+    mode: "0755"
+
+- name: Copy kubernetes ENV VARS to Worker Home Kube Directory
+  copy:
+    src: "artefacts/admin.conf"
+    dest: "/root/.kube/config"

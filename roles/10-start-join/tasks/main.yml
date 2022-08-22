@@ -1,0 +1,68 @@
+---
+- name: Initalize Master - Control Plane
+  command: "kubeadm init --pod-network-cidr=10.10.0.0/16 --control-plane-endpoint {{item.key}}:6443 --upload-certs"
+  with_dict: "{{ master[0] }}"
+
+- name: Create Env Variable for Kubernetes
+  file:
+    path: "/root/.kube"
+    state: directory
+    mode: "0755"
+
+- name: Copy kubernetes ENV VARS to Home Kube Directory
+  copy:
+    src: "/etc/kubernetes/admin.conf"
+    dest: "/root/.kube/config"
+    remote_src: yes
+
+- name: Copy admin.conf file from Prime Control Node to Local Artefact Dir
+  fetch:
+      src: "/etc/kubernetes/admin.conf"
+      dest: "artefacts/admin.conf"
+      flat: yes
+
+- name: Download Calico Network Plugin
+  get_url: 
+      url: https://raw.githubusercontent.com/projectcalico/calico/v3.24.0/manifests/calico.yaml
+      dest: /root/calico.yaml
+      mode: "0777"
+
+- name: Install Calico Network Plugin
+  command: kubectl apply -f /root/calico.yaml
+
+- name: Remove calico yaml file
+  file:
+    path: calico.yaml
+    state: absent 
+
+- name: Wait for 1:00min and continue play
+  wait_for:
+    timeout: 60
+  delegate_to: localhost
+
+- name: Generate Node Join Token
+  command: "{{ item }}"
+  with_items: kubeadm token create --print-join-command
+  register: join_command
+
+- name: Generate Control Node Join Cert
+  raw: "{{ item }}"
+  with_items: kubeadm init phase upload-certs --upload-certs | grep -vw -e certificate -e Namespace
+  register: join_cert
+
+- name: Template Join Command
+  template:
+    src: temp.j2
+    dest: artefacts/temp.yaml
+  delegate_to: localhost
+
+     
+
+
+
+
+
+        
+
+
+

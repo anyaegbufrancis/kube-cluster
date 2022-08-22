@@ -1,9 +1,24 @@
-[servers]
-{% for dict_item in ansible %}
+[master]
+{% for dict_item in master %}
 {% for key, value in dict_item.items() %}
 {{ value.ip_address }}
 {% endfor %}
 {% endfor %}
+[worker]
+{% for dict_item in worker %}
+{% for key, value in dict_item.items() %}
+{{ value.ip_address }}
+{% endfor %}
+{% endfor %}
+[frontend]
+{% for dict_item in cluster %}
+{% for key, value in dict_item.items() %}
+{{ value.ip_address }}
+{% endfor %}
+{% endfor %}
+[cluster:children]
+master
+worker
 [all:vars]
 ansible_connection=ssh
 ansible_user=root

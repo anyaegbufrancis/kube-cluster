@@ -20,7 +20,7 @@
           path: "{{ item }}"
           state: absent
       with_items:
-          - "/mnt/{{ temp }}"
+          #- "/mnt/{{ temp }}"
           - "/var/www/html/rhel"
           - "/var/lib/tftpboot/pxelinux"
     
@@ -34,13 +34,13 @@
            - "/var/lib/tftpboot/pxelinux/pxelinux.cfg"
            - "/var/lib/tftpboot/pxelinux/networkboot"
            - "/var/www/html/rhel"
-           - "/mnt/{{ temp }}"
+           #- "/mnt/{{ temp }}"
 
     - name: Copy kickstart files over
       copy:
          src: "artefacts/{{ item.key }}_kickstart.cfg"
          dest: "/var/www/html/rhel/{{ item.key }}_kickstart.cfg"
-      with_dict: "{{ ansible }}"
+      with_dict: "{{ master | combine(worker) | combine(cluster) }}"
 
     - name: Mount iso file
       mount:
@@ -142,7 +142,7 @@
          path: /root/.ssh/known_hosts
          regexp: "^{{ item.value.ip_address }}"
          state: absent
-      with_dict: "{{ ansible }}"
+      with_dict: "{{ master | combine(worker) | combine(cluster) }}"
             
 
       

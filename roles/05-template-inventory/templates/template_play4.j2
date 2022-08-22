@@ -1,0 +1,21 @@
+---
+  - name: Join Worker Node(s)
+    gather_facts: false
+    hosts: worker
+    vars_files: artefacts/temp.yaml
+    roles:       
+       - roles/11-join-worker
+
+  - name: Join Master Node - 01
+    gather_facts: false
+    hosts: master[1]
+    vars_files: artefacts/temp.yaml
+    roles:       
+       - roles/12-join-master
+
+  - name: Join Master Node - 02
+    gather_facts: false
+    hosts: master[2]
+    vars_files: artefacts/temp.yaml
+    roles:       
+       - roles/12-join-master

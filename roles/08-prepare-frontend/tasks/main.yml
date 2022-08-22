@@ -1,0 +1,61 @@
+---  
+     - name: Update OS on Node-01
+       yum: 
+        name: "*"
+        state: latest
+
+     - name: Install HA Proxy, vmware tools, yum-utils, epe-release, vim, git, curl and wget on Nodes
+       yum:
+         name: 
+           - open-vm-tools # vmware tools
+           - yum-utils
+           - epel-release
+           - vim
+           - git
+           - curl
+           - wget
+           - haproxy
+         state: latest
+       
+     - name: Configure Required Firewall Ports
+       firewalld:
+          permanent: yes
+          immediate: yes
+          port: "{{ item }}"
+          state: enabled
+       with_items:
+          - 6443/tcp
+          - 8080/tcp
+     
+     - name: Restart Firewall Mode
+       command: "firewall-cmd --reload"  
+
+     - name: Set selinux to permissive
+       selinux:
+          policy: targeted
+          state: permissive
+
+     - name: Disable SELINUX completely
+       selinux:
+        state: disabled
+
+     - name: Restart Container Runtime
+       service:
+          name: haproxy
+          state: restarted
+          enabled: yes
+      
+     - name: Initialize HA Proxy Config
+       template:
+           src: "{{ item.src }}"
+           dest: "{{ item.dest }}"
+       with_items:
+           - { src: haproxy.j2, dest: /etc/haproxy/haproxy.cfg }
+   
+
+          
+     
+     
+     
+     
+     

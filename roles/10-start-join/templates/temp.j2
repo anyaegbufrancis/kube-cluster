@@ -1,0 +1,2 @@
+mastert: {{ join_command.results[0].stdout }} --control-plane --certificate-key {{ join_cert.results[0].stdout }} 
+workert: {{ join_command.results[0].stdout }}

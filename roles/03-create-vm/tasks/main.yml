@@ -10,7 +10,7 @@
       state: absent
       force: yes
     delegate_to: localhost
-    with_dict: "{{ ansible }}"
+    with_dict: "{{ master | combine(worker) | combine(cluster) }}"
 
   - name: Create Services VMs
     vmware_guest:
@@ -34,7 +34,7 @@
       - name: "{{ pg }}"
         device_type: vmxnet3
     delegate_to: localhost
-    with_dict: "{{  ansible }}"
+    with_dict: "{{  master | combine(worker) | combine(cluster) }}"
     register: vm_mac
   
 

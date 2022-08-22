@@ -1,14 +1,16 @@
 ---  
-    - name: Initialize Inventory File
+    - name: Initialize Inventory File on Node
       template:
           src: "inventory.j2"
           dest: "inventory"
-      with_dict: "{{ ansible }}"
+      with_dict: "{{ master | combine(worker) | combine(cluster) }}"
       
-    - name: Generate Other_plays file
+    - name: Generate template_play3 & template_play4 Playbooks
       template:
           src: "{{ item.src }}"
           dest: "{{ item.dest }}"
       with_items:
-          - { src: other_plays.j2, dest: "other_plays.yaml" }
+          - { src: template_play3.j2, dest: "template_play3.yaml" }
+          - { src: template_play4.j2, dest: "template_play4.yaml" }
+          - { src: template_play5.j2, dest: "template_play5.yaml" }
      

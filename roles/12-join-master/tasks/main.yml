@@ -1,0 +1,18 @@
+---
+  - name: Join Other Master Nodes
+    command: "{{ item }}"
+    with_items:
+      - "{{ mastert }}"
+
+  - name: Create Env Variable for Kubernetes
+    file:
+      path: "/root/.kube"
+      state: directory
+      mode: "0755"
+  
+  - name: Copy kubernetes ENV VARS to Home Kube Directory
+    copy:
+      src: "/etc/kubernetes/admin.conf"
+      dest: "/root/.kube/config"
+      remote_src: yes
+    

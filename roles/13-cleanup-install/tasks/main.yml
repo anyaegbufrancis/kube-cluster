@@ -1,0 +1,36 @@
+---    
+  - name: Copy artefacts over
+    copy:
+       src: "{{ item }}"
+       dest: "artefacts/{{ item }}"
+    with_items:
+       - ansible.cfg
+       - inventory
+       - template_play3.yaml
+       - template_play4.yaml
+       - template_play5.yaml
+
+  - name: Zip All artefacts
+    archive:
+        path: "artefacts/*"
+        dest: "artefacts/build_bundle.zip"
+        format: zip
+        remove: yes
+       
+  - name: Cleanup Install Environment    
+    file:
+       path: "{{ item }}"
+       state: absent
+    with_items:
+        - "inventory"
+        - "ansible.cfg"
+        - "template_play3.yaml"
+        - "template_play4.yaml"
+        - "template_play5.yaml"
+
+  - name: Task Completion alert
+    debug:
+      msg: "Deployment Completed!!!"
+
+    
+    

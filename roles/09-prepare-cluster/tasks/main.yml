@@ -1,0 +1,10 @@
+---
+  - name: Remove /etc/containerd/config.toml file
+    file:
+      path: /etc/containerd/config.toml
+      state: absent
+    
+  - name: Restart Containerd Service
+    service:
+      name: containerd
+      state: restarted

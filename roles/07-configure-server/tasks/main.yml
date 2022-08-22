@@ -1,52 +1,169 @@
 ---       
-     - name: Update OS on {{server_name}}
+     - name: Mask Unneeded versions in yum config file
+       lineinfile:
+          path: /etc/yum.conf
+          line: exclude = kubelet-1.18.* kubelet-1.17.* kubelet-1.16.*
+          state: present
+
+     - name: Update OS on Node-01
        yum: 
         name: "*"
         state: latest
 
-     - name: Reboot {{server_name}} and wait for it to restart
-       reboot:
-         msg: "Reboot initiated by Ansible"
-         connect_timeout: 5
-         reboot_timeout: 600
-         pre_reboot_delay: 0
-         post_reboot_delay: 30
-         test_command: whoami
-       
-     - name: Install services and dependencies on {{server_name}}
-       package:
-          name: 
-            - policycoreutils-python-utils
-            - libselinux-python3
-          state: latest
-
-     - name: Install vmware tools on {{server_name}}
+     - name: Install vmware tools, yum-utils, epe-release, vim, git, curl and wget on Nodes
        yum:
          name: 
-           - "open-vm-tools" # vmware tools
-         state: present
+           - open-vm-tools # vmware tools
+           - yum-utils
+           - epel-release
+           - vim
+           - git
+           - curl
+           - wget
+           - socat
+           - conntrack
+           - ebtables
+           - ipset
+         state: latest
+       
+     - name: Configure Required Firewall Ports
+       firewalld:
+          permanent: yes
+          immediate: yes
+          port: "{{ item }}"
+          state: enabled
+       with_items:
+          - 6443/tcp
+          - 2379/tcp
+          - 2380/tcp
+          - 10250/tcp
+          - 10251/tcp
+          - 10252/tcp
+          - 10255/tcp
+          - 8080/tcp
+          - 30000-32767/tcp
      
-     - name: Reboot {{server_name}} and wait for it to restart
+     - name: Restart Firewall Mode
+       command: "firewall-cmd --reload"  
+ 
+     - name: Set selinux to permissive
+       selinux:
+          policy: targeted
+          state: permissive
+
+     - name: Disable SELINUX completely
+       selinux:
+        state: disabled
+
+     - name: Create file if does not exist and add lines
+       lineinfile:
+          path: /etc/sysctl.d/kubernetes.conf
+          state: present
+          create: yes
+          line: "{{ item }}"
+       with_items: 
+          - "net.bridge.bridge-nf-call-ip6tables = 1"
+          - "net.bridge.bridge-nf-call-iptables = 1"
+          - "net.ipv4.ip_forward = 1"     
+
+     - name: Disable swap for current session
+       command: swapoff -a
+       become: true
+     
+     - name: Disable swap permanently, persist reboots
+       replace:
+           path: /etc/fstab
+           regexp: '^(\s*)([^#\n]+\s+)(\w+\s+)swap(\s+.*)$'
+           replace: '#\1\2\3swap\4'
+           backup: yes  
+
+     - name: Add yum repo for Kubernetes Install
+       yum_repository:
+           name: Kubernetes
+           description: Kubernetes Repository
+           baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+           gpgcheck: no
+           enabled: yes
+           repo_gpgcheck: no
+           gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+     - name: Create yum repo for Docker Install
+       yum_repository:
+           name: Docker
+           description: Docker Repository
+           baseurl: https://download.docker.com/linux/centos/8/x86_64/stable/          
+           gpgcheck: no
+           enabled: yes
+
+     - name: Install docker directly from repo
+       yum:
+         name: https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.6.7-3.1.el7.x86_64.rpm   
+         state: present
+         disable_gpg_check: yes
+
+     - name: Reboot Node and wait for it to restart
        reboot:
          msg: "Reboot initiated by Ansible"
          connect_timeout: 5
          reboot_timeout: 600
          pre_reboot_delay: 0
          post_reboot_delay: 30
-         test_command: whoami   
+         test_command: whoami 
 
-     - name: Enable selinux for services on {{server_name}}
-       selinux:
-          policy: targeted
-          state: enforcing
-     
-     - name: Restart Services
+     - name: Install Kubernetes and supporting Components
+       dnf:
+         name:
+            - kubelet
+            - kubeadm
+            - kubectl
+            - docker-ce
+            - docker-ce-cli
+            - libc.so.6
+            - docker-compose-plugin
+         state: latest
+
+     - name: Configure Persistent Modules
+       lineinfile:
+           path: /etc/modules-load.d/containerd.conf
+           state: present
+           create: yes
+           line:
+             - "overlay"
+             - "br_netfilter"     
+
+     - name: Change Sysctl Settings
+       command: "{{ item }}"
+       with_items:
+             - modprobe overlay
+             - modprobe br_netfilter
+             - sysctl --system
+
+     - name: Update OS on Node-02
+       yum: 
+        name: "*"
+        state: latest
+
+     - name: Create Docker Configuration File
+       file:
+         path: /etc/containerd
+         state: directory
+
+     - name: Restart Container Runtime
        service:
           name: "{{ item }}"
           state: restarted
           enabled: yes
        with_items:
-         - NetworkManager
+          - containerd
+          - docker
+          
+     - name: Restart Kubelet Runtime
+       service:
+          name: kubelet
+          enabled: yes
+
+          
+     
      
      
      

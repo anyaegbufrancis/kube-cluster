@@ -1,0 +1,35 @@
+---
+  - name: Node Bootstrapping - Powers up & Installs OS on VM
+    gather_facts: false
+    hosts: localhost
+    vars_files: artefacts/details.yaml
+    roles:
+       - roles/06-install-server
+
+  - name: Base Kubernetes Configuration on Master & Worker Node(s) 
+    gather_facts: false
+    hosts: cluster
+    vars_files: artefacts/details.yaml
+    roles:       
+       - roles/07-configure-server
+
+  - name: Set Up Frontend Node(s)
+    gather_facts: false
+    hosts: frontend
+    vars_files: artefacts/details.yaml
+    roles:       
+       - roles/08-prepare-frontend
+
+  - name: Prepare ALL Cluster Nodes for Container Runtile & Kubernetes
+    hosts: cluster
+    vars_files: artefacts/details.yaml
+    roles:       
+       - roles/09-prepare-cluster
+
+  - name: Initialize Master Nodes Control Plane
+    hosts: master[0]
+    vars_files: artefacts/details.yaml
+    roles:       
+       - roles/10-start-join
+
+ 
