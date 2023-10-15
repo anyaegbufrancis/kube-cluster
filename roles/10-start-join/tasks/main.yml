@@ -1,6 +1,6 @@
 ---
 - name: Initalize Master - Control Plane
-  command: "kubeadm init --pod-network-cidr=10.10.0.0/16 --control-plane-endpoint {{item.key}}:6443 --upload-certs"
+  command: "kubeadm init --pod-network-cidr=10.10.0.0/16 --control-plane-endpoint {{item.key}}:6443 --upload-certs --ignore-preflight-errors=all"
   with_dict: "{{ master[0] }}"
 
 - name: Create Env Variable for Kubernetes

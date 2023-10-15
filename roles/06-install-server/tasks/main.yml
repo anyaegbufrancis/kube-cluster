@@ -12,7 +12,7 @@
        username: "{{ vcenter.username }}"
        password: "{{ vcenter.password }}"
        validate_certs: no
-       folder: "/{{ datacenter }}/vm/"
+       folder: "/{{ datacenter }}/vm"
        name: "{{ item.key }}"
        state: powered-on
      delegate_to: localhost

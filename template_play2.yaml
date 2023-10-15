@@ -2,6 +2,8 @@
   - name: Prepare kickstart & Inventory files, create VMs and prepare PXE server 
     gather_facts: false
     hosts: localhost
+    vars:
+       ansible_python_interpreter: /usr/bin/python3
     vars_files: artefacts/details.yaml
     roles:
        - roles/02-initialize-ks       

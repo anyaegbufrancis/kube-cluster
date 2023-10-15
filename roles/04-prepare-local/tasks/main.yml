@@ -97,7 +97,7 @@
          line: '      filename "pxelinux/pxelinux.0";'
 
     - name: Enable selinux for services
-      selinux:
+      ansible.posix.selinux:
          policy: targeted
          state: enforcing
 
